@@ -101,10 +101,6 @@ app.use(apiRouter.routes()).use(apiRouter.allowedMethods());
 // https://www.nginx.com/blog/benefits-of-microcaching-nginx/
 // app.use(microcache.cacheSeconds(1, req => useMicroCache && req.originalUrl))
 
-app.use(async (ctx, next) => {
-  console.log(chalk.green(`path: ${ctx.url}`));
-  await next();
-})
 
 async function render (ctx) {
   const s = Date.now()
