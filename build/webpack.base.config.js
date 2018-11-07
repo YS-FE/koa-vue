@@ -1,10 +1,12 @@
-const path = require('path')
-const webpack = require('webpack')
-const ExtractTextPlugin = require('extract-text-webpack-plugin')
-const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin')
-const { VueLoaderPlugin } = require('vue-loader')
+const path = require('path');
+const webpack = require('webpack');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const FriendlyErrorsPlugin = require('friendly-errors-webpack-plugin');
+const { VueLoaderPlugin } = require('vue-loader');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const chalk = require('chalk');
 
-const isProd = process.env.NODE_ENV === 'production'
+const isProd = process.env.NODE_ENV === 'production';
 
 module.exports = {
   devtool: isProd
@@ -77,6 +79,10 @@ module.exports = {
         new webpack.optimize.ModuleConcatenationPlugin(),
         new ExtractTextPlugin({
           filename: 'common.[chunkhash].css'
+        }),
+        new ProgressBarPlugin({
+          format: '  build [:bar] ' + chalk.green.bold(':percent') + ' (:elapsed seconds)',
+          clear: false
         })
       ]
     : [

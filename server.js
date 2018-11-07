@@ -8,20 +8,17 @@ const favicon = require('koa-favicon')
 const compression = require('koa-compress');
 const static = require('koa-static');
 
-const resolve = file => path.resolve(__dirname, file)
-
-const { createBundleRenderer } = require('vue-server-renderer')
-
+const resolve = file => path.resolve(__dirname, file);
+const { createBundleRenderer } = require('vue-server-renderer');
 const proxy = require('koa-proxies');
-
 const isProd = process.env.NODE_ENV === 'production'
 
 const serverInfo =
   `koa/${require('koa/package.json').version} ` +
-  `vue-server-renderer/${require('vue-server-renderer/package.json').version}`
+  `vue-server-renderer/${require('vue-server-renderer/package.json').version}`;
 
 const app = new Koa();
-const {apiRouter} = require('./router')
+const {apiRouter} = require('./router');
 
 
 // 开启接口代理
@@ -82,8 +79,8 @@ const serve = (root, cache) => static(root, {
     maxage: cache && isProd ? 1000 * 60 * 60 * 24 * 30 : 0
 });
 
-app.use(compression({ threshold: 0 }))
-app.use(favicon('./public/logo-48.png'))
+app.use(compression({ threshold: 0 }));
+app.use(favicon('./public/logo-48.png'));
 
 
 app.use(serve('./dist', true));
@@ -145,17 +142,17 @@ async function render (ctx) {
 }
 
 
-const router = new Router()
+const router = new Router();
 router.get('*', isProd ? render : async (ctx, next) => {
   await readyPromise.then(() =>  render(ctx))
-})
-app.use(router.routes()).use(router.allowedMethods())
+});
+app.use(router.routes()).use(router.allowedMethods());
 
 
-const port = process.env.PORT || 8888
+const port = process.env.PORT || 8888;
 app.listen(port, () => {
-  console.log(`server started at localhost:${port}`)
-})
+  console.log(chalk.green(`\n ✈️ ✈️ server listening on ${port}, open http://localhost:${port} in your browser`));
+});
 
 
 
