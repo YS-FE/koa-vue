@@ -5,6 +5,7 @@ const webpack = require('webpack')
 const chokidar = require('chokidar')
 const clientConfig = require('./webpack.client.config')
 const serverConfig = require('./webpack.server.config')
+const convert = require('koa-convert');
 
 const readFile = (fs, file) => {
   try {
@@ -49,66 +50,34 @@ module.exports = function setupDevServer (app, templatePath, cb) {
 
   // dev middleware
   const clientCompiler = webpack(clientConfig)
+  const webpackDev  = require('koa-webpack-dev-middleware')
 
-
-  /**
-   * 修改 适合 koa 的 webpack-dev-middleware 中间件
-   */
-  const webpackDev  = require('webpack-dev-middleware')
-  const devMiddleware = (compiler, opts) => {
-    const middleware = webpackDev(compiler, opts)
-
-    clientCompiler.plugin('done', stats => {
-      stats = stats.toJson()
-      stats.errors.forEach(err => console.error(err))
-      stats.warnings.forEach(err => console.warn(err))
-      if (stats.errors.length) return
-      clientManifest = JSON.parse(readFile(
-        middleware.fileSystem,
-        'vue-ssr-client-manifest.json'
-      ))
-      update()
-    })
-
-    return async (ctx, next) => {
-      await middleware(ctx.req, {
-        end: (content) => {
-          ctx.body = content
-        },
-        setHeader: (name, value) => {
-          ctx.set(name, value)
-        }
-      }, next);
-    }
-  }
-  app.use(devMiddleware(clientCompiler, {
+  const devMiddleware = webpackDev(clientCompiler, {
     publicPath: clientConfig.output.publicPath,
     noInfo: true
-  }))
-  
+  });
+
+  app.use(convert(devMiddleware));
 
 
-  /**
-   * 修改 适合 koa 的 webpack-hot-middleware 的中间件
-   */
-  const webpackHot = require('webpack-hot-middleware');
-  const PassThrough = require('stream').PassThrough;
+  clientCompiler.plugin('done', stats => {
+    stats = stats.toJson()
+    stats.errors.forEach(err => console.error(err))
+    stats.warnings.forEach(err => console.warn(err))
+    if (stats.errors.length) return
+    clientManifest = JSON.parse(readFile(
+      devMiddleware.fileSystem,
+      'vue-ssr-client-manifest.json'
+    ))
+    update()
+  })
 
-  const hotMiddleware = (compiler, opts) => {
-      const middleware = webpackHot(compiler, opts);
-      return async (ctx, next) => {
-        let stream = new PassThrough()
-        ctx.body = stream
-        await middleware(ctx.req, {
-          write: stream.write.bind(stream),
-          writeHead: (status, headers) => {
-            ctx.status = status
-            ctx.set(headers)
-          }
-        }, next)
-      }
-  }
-  app.use(hotMiddleware(clientCompiler, {heartbeat: 5000}))
+
+  // hot middleware
+  const webpackHot = require('koa-webpack-hot-middleware');
+  const hotMiddleware = webpackHot(clientCompiler, {heartbeat: 5000});
+  app.use(convert(hotMiddleware));
+
 
 
   // watch and update server renderer
